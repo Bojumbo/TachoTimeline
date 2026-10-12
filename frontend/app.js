@@ -55,6 +55,18 @@ function parseApiDate(dateStr) {
     return new Date(s);
 }
 
+async function parseJsonResponse(res) {
+    const text = await res.text();
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        if (!res.ok) {
+            throw new Error(`Помилка сервера HTTP ${res.status}: ${text.slice(0, 120)}`);
+        }
+        throw new Error(`Некоректна відповідь сервера (HTTP ${res.status}): ${text.slice(0, 120)}`);
+    }
+}
+
 // ================= Authentication =================
 async function getAuthToken() {
     let token = localStorage.getItem('tacho_token');
@@ -62,7 +74,7 @@ async function getAuthToken() {
         try {
             const res = await fetch(`${API_BASE}/auth/guest`, { method: 'POST' });
             if (res.ok) {
-                const data = await res.json();
+                const data = await parseJsonResponse(res);
                 token = data.access_token;
                 localStorage.setItem('tacho_token', token);
                 document.getElementById('userNameDisplay').innerText = `${data.username} (Гість)`;
@@ -167,13 +179,13 @@ async function refreshDashboard() {
         ]);
 
         if (statusRes.ok) {
-            currentStatus = await statusRes.json();
+            currentStatus = await parseJsonResponse(statusRes);
             renderMetrics(currentStatus);
             renderAlerts(currentStatus.warnings || []);
         }
 
         if (actRes.ok) {
-            activitiesList = await actRes.json();
+            activitiesList = await parseJsonResponse(actRes);
             renderTimelineData(activitiesList);
             renderActivityTable(activitiesList);
         }
