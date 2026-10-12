@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TachoSmart - Розумний Тахограф та Шкала Часу (ЄС 561/2006)</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Vis-Timeline CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/vis-timeline@7.7.3/styles/vis-timeline-graph2d.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+    <div class="app-layout">
+        <!-- TOP HEADER -->
+        <header class="top-nav">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-truck-fast"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>TachoSmart <span class="badge-eu">EU 561/2006</span></h1>
+                    <span class="brand-subtitle">Цифровий помічник водія далекобійника</span>
+                </div>
+            </div>
+
+            <!-- Clocks -->
+            <div class="header-center">
+                <div class="clock-chip">
+                    <span class="clock-label">UTC:</span>
+                    <span class="clock-time font-mono" id="utcClock">00:00:00</span>
+                </div>
+                <div class="clock-chip local">
+                    <span class="clock-label">МІСЦЕВИЙ:</span>
+                    <span class="clock-time font-mono" id="localClock">00:00:00</span>
+                </div>
+            </div>
+
+            <!-- Right Controls -->
+            <div class="header-actions">
+                <button id="btnSeedDemo" class="btn btn-secondary btn-sm" title="Завантажити зразок рейсу для тестування">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Демо Рейс
+                </button>
+                <button id="btnAddManual" class="btn btn-primary btn-sm" title="Додати запис вручну">
+                    <i class="fa-solid fa-plus"></i> Додати
+                </button>
+                <div class="user-badge" id="userMenuBtn">
+                    <i class="fa-solid fa-user-circle"></i>
+                    <span id="userNameDisplay">Водій (Гість)</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- WARNINGS & NOTIFICATIONS STRIP -->
+        <section id="alertsContainer" class="alerts-strip"></section>
+
+        <!-- MAIN CONTAINER -->
+        <main class="main-content">
+            <!-- TACHOGRAPH HARDWARE CONTROLLER (4 BIG BUTTONS) -->
+            <section class="tacho-controller-card">
+                <div class="controller-header">
+                    <div class="controller-title">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span>ПОТОЧНИЙ СТАН ТАХОГРАФА</span>
+                    </div>
+                    <div class="active-activity-badge" id="activeStateBadge">
+                        <span class="pulse-dot"></span>
+                        <span id="activeStateText">НЕАКТИВНО</span>
+                        <span id="activeTimerText" class="font-mono">00:00</span>
+                    </div>
+                </div>
+
+                <div class="tacho-buttons-grid">
+                    <!-- DRIVE BUTTON -->
+                    <button class="tacho-btn mode-drive" data-type="DRIVE" id="btnModeDrive">
+                        <div class="tacho-btn-icon">
+                            <i class="fa-solid fa-steering-wheel"></i>
+                        </div>
+                        <div class="tacho-btn-info">
+                            <span class="tacho-btn-title">КЕРМО</span>
+                            <span class="tacho-btn-code">DRIVE (1)</span>
+                        </div>
+                        <div class="status-indicator"></div>
+                    </button>
+
+                    <!-- WORK BUTTON -->
+                    <button class="tacho-btn mode-work" data-type="WORK" id="btnModeWork">
+                        <div class="tacho-btn-icon">
+                            <i class="fa-solid fa-hammer"></i>
+                        </div>
+                        <div class="tacho-btn-info">
+                            <span class="tacho-btn-title">РОБОТА</span>
+                            <span class="tacho-btn-code">WORK (2)</span>
+                        </div>
+                        <div class="status-indicator"></div>
+                    </button>
+
+                    <!-- POA BUTTON -->
+                    <button class="tacho-btn mode-poa" data-type="POA" id="btnModePoa">
+                        <div class="tacho-btn-icon">
+                            <i class="fa-regular fa-square"></i>
+                        </div>
+                        <div class="tacho-btn-info">
+                            <span class="tacho-btn-title">ГОТОВНІСТЬ</span>
+                            <span class="tacho-btn-code">POA (3)</span>
+                        </div>
+                        <div class="status-indicator"></div>
+                    </button>
+
+                    <!-- REST BUTTON -->
+                    <button class="tacho-btn mode-rest" data-type="REST" id="btnModeRest">
+                        <div class="tacho-btn-icon">
+                            <i class="fa-solid fa-bed"></i>
+                        </div>
+                        <div class="tacho-btn-info">
+                            <span class="tacho-btn-title">ВІДПОЧИНОК</span>
+                            <span class="tacho-btn-code">REST (4)</span>
+                        </div>
+                        <div class="status-indicator"></div>
+                    </button>
+                </div>
+            </section>
+
+            <!-- METRICS CARDS GRID (EU 561/2006 COCKPIT) -->
+            <section class="metrics-grid">
+                <!-- 1. CONTINUOUS DRIVING -->
+                <div class="metric-card" id="cardContinuous">
+                    <div class="metric-card-header">
+                        <div class="metric-title">
+                            <i class="fa-solid fa-hourglass-half text-success"></i>
+                            <span>Безперервне кермування</span>
+                        </div>
+                        <span class="metric-limit">Макс: 4:30 год</span>
+                    </div>
+                    <div class="metric-value-row">
+                        <div class="metric-primary-val font-mono" id="valContinuousTime">00:00</div>
+                        <div class="metric-sub-val">
+                            <span class="label">Залишок:</span>
+                            <span class="val font-mono text-highlight" id="valContinuousLeft">4:30</span>
+                        </div>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar bg-drive" id="barContinuous" style="width: 0%"></div>
+                    </div>
+                    <div class="metric-card-footer">
+                        <span id="valSplitStatus"><i class="fa-regular fa-circle-check"></i> Потрібна пауза: 45 хв</span>
+                    </div>
+                </div>
+
+                <!-- 2. DAILY DRIVING -->
+                <div class="metric-card" id="cardDaily">
+                    <div class="metric-card-header">
+                        <div class="metric-title">
+                            <i class="fa-solid fa-road text-info"></i>
+                            <span>Щоденне кермування</span>
+                        </div>
+                        <span class="metric-limit" id="valDailyLimitLabel">9:00 / 10:00 год</span>
+                    </div>
+                    <div class="metric-value-row">
+                        <div class="metric-primary-val font-mono" id="valDailyDrive">00:00</div>
+                        <div class="metric-sub-val">
+                            <span class="label">Залишок:</span>
+                            <span class="val font-mono text-highlight" id="valDailyLeft">9:00</span>
+                        </div>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar bg-info" id="barDaily" style="width: 0%"></div>
+                    </div>
+                    <div class="metric-card-footer">
+                        <span id="valExtensionsStatus">Подовжень 10 год використано: 0 з 2</span>
+                    </div>
+                </div>
+
+                <!-- 3. DAILY SHIFT & 24H WINDOW -->
+                <div class="metric-card" id="cardShift">
+                    <div class="metric-card-header">
+                        <div class="metric-title">
+                            <i class="fa-solid fa-business-time text-warning"></i>
+                            <span>Робоча зміна (24h вікно)</span>
+                        </div>
+                        <span class="metric-limit" id="valShiftLimitLabel">13 / 15 год</span>
+                    </div>
+                    <div class="metric-value-row">
+                        <div class="metric-primary-val font-mono" id="valShiftElapsed">00:00</div>
+                        <div class="metric-sub-val">
+                            <span class="label">Дедлайн зміни:</span>
+                            <span class="val font-mono text-highlight" id="valShiftLeft">13:00</span>
+                        </div>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar bg-warning" id="barShift" style="width: 0%"></div>
+                    </div>
+                    <div class="metric-card-footer">
+                        <span id="valReducedRestStatus">Скорочених відпочинків (9h): 0 з 3</span>
+                    </div>
+                </div>
+
+                <!-- 4. WEEKLY DRIVING & 144H REST -->
+                <div class="metric-card" id="cardWeekly">
+                    <div class="metric-card-header">
+                        <div class="metric-title">
+                            <i class="fa-solid fa-calendar-week text-purple"></i>
+                            <span>Тижневі ліміти</span>
+                        </div>
+                        <span class="metric-limit">56h / 90h</span>
+                    </div>
+                    <div class="metric-value-row">
+                        <div class="metric-primary-val font-mono" id="valWeekDrive">0.0h</div>
+                        <div class="metric-sub-val">
+                            <span class="label">2-тижневий:</span>
+                            <span class="val font-mono" id="valTwoWeekDrive">0.0 / 90h</span>
+                        </div>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar bg-purple" id="barWeekly" style="width: 0%"></div>
+                    </div>
+                    <div class="metric-card-footer">
+                        <span id="valWeeklyRestCountdown"><i class="fa-solid fa-bed"></i> До щотижневого відпочинку: 144 год</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- INTERACTIVE TIMELINE SECTION -->
+            <section class="timeline-section-card">
+                <div class="timeline-header">
+                    <div class="timeline-title-group">
+                        <h2><i class="fa-solid fa-chart-gantt"></i> Графічна шкала тахографа (Timeline)</h2>
+                        <span class="timeline-legend">
+                            <span class="legend-item"><span class="dot bg-drive"></span> Кермо</span>
+                            <span class="legend-item"><span class="dot bg-work"></span> Робота</span>
+                            <span class="legend-item"><span class="dot bg-poa"></span> Готовність</span>
+                            <span class="legend-item"><span class="dot bg-rest"></span> Відпочинок</span>
+                        </span>
+                    </div>
+
+                    <div class="timeline-controls">
+                        <div class="btn-group">
+                            <button id="view24h" class="btn btn-tab active">24 Години</button>
+                            <button id="view48h" class="btn btn-tab">48 Годин</button>
+                            <button id="view7d" class="btn btn-tab">7 Днів (Тиждень)</button>
+                        </div>
+                        <button id="btnZoomFit" class="btn btn-icon btn-secondary" title="Вмістити все">
+                            <i class="fa-solid fa-arrows-to-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Vis-Timeline Canvas Container -->
+                <div id="visTimelineContainer" class="vis-custom-timeline"></div>
+            </section>
+
+            <!-- ACTIVITY HISTORY TABLE -->
+            <section class="history-section-card">
+                <div class="history-header">
+                    <h3><i class="fa-solid fa-clock-rotate-left"></i> Журнал записів тахографа</h3>
+                    <div class="history-actions">
+                        <button id="btnClearActivities" class="btn btn-danger btn-sm">
+                            <i class="fa-solid fa-trash-can"></i> Очистити журнал
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="tacho-table">
+                        <thead>
+                            <tr>
+                                <th>Статус</th>
+                                <th>Початок</th>
+                                <th>Кінець</th>
+                                <th>Тривалість</th>
+                                <th>Примітки</th>
+                                <th style="text-align: right">Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activityTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    Записів немає. Натисніть одну з кнопок вище або завантажте «Демо Рейс».
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL: ADD / EDIT ACTIVITY -->
+    <div id="activityModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 id="modalTitle"><i class="fa-solid fa-pen-to-square"></i> Додати запис тахографа</h3>
+                <button class="btn-close" id="btnCloseModal">&times;</button>
+            </div>
+            <form id="activityForm" class="modal-body">
+                <input type="hidden" id="editActivityId" value="">
+                
+                <div class="form-group">
+                    <label>Тип активності:</label>
+                    <div class="activity-type-picker">
+                        <label class="radio-label">
+                            <input type="radio" name="modalType" value="DRIVE" checked>
+                            <span class="picker-box bg-drive"><i class="fa-solid fa-steering-wheel"></i> Кермо</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="modalType" value="WORK">
+                            <span class="picker-box bg-work"><i class="fa-solid fa-hammer"></i> Робота</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="modalType" value="POA">
+                            <span class="picker-box bg-poa"><i class="fa-regular fa-square"></i> Готовність</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="modalType" value="REST">
+                            <span class="picker-box bg-rest"><i class="fa-solid fa-bed"></i> Відпочинок</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="modalStartTime">Початок (місцевий час):</label>
+                        <input type="datetime-local" id="modalStartTime" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="modalEndTime">Кінець (або залиште порожнім, якщо триває):</label>
+                        <input type="datetime-local" id="modalEndTime" class="form-input">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="modalNote">Примітка / Опис рейсу:</label>
+                    <input type="text" id="modalNote" class="form-input" placeholder="Напр. Завантаження або Маршрут Київ-Варшава">
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelModal">Скасувати</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveActivity">Зберегти</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Vis-Timeline Script -->
+    <script src="https://unpkg.com/vis-timeline@7.7.3/standalone/umd/vis-timeline-graph2d.min.js"></script>
+    <!-- App Logic -->
+    <script src="app.js"></script>
+</body>
+</html>

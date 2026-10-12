@@ -1,0 +1,106 @@
+import os
+from datetime import datetime, timezone
+from typing import Optional, List
+from pydantic import BaseModel, ConfigDict
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Text
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tacho.db")
+
+# For SQLite, ensure connect_args allows multi-threading
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, index=True, nullable=False)
+    email = Column(String(120), unique=True, index=True, nullable=True)
+    hashed_password = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    activities = relationship("Activity", back_populates="user", cascade="all, delete-orphan")
+
+
+class Activity(Base):
+    __tablename__ = "activities"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    type = Column(String(20), nullable=False)  # DRIVE, WORK, POA, REST
+    start_time = Column(DateTime, nullable=False, index=True)
+    end_time = Column(DateTime, nullable=True, index=True)  # Null if currently ongoing
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="activities")
+
+
+def init_db():
+    Base.metadata.create_all(bind=engine)
+
+
+# ================= Pydantic Schemas =================
+
+class ActivityBase(BaseModel):
+    type: str  # DRIVE, WORK, POA, REST
+    start_time: datetime
+    end_time: Optional[datetime] = None
+    note: Optional[str] = None
+
+
+class ActivityCreate(ActivityBase):
+    pass
+
+
+class ActivityUpdate(BaseModel):
+    type: Optional[str] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    note: Optional[str] = None
+
+
+class ActivityOut(ActivityBase):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SwitchActivityRequest(BaseModel):
+    type: str
+    note: Optional[str] = None
+    timestamp: Optional[datetime] = None
+
+
+class UserCreate(BaseModel):
+    username: str
+    password: str
+    email: Optional[str] = None
+
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    username: str
+    user_id: int
+
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    email: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: tacho_backend
+    restart: always
+    environment:
+      - DATABASE_URL=sqlite:////data/tacho.db
+      - JWT_SECRET=change_this_to_very_secure_secret_key_12345
+    volumes:
+      - tacho_data:/data
+    ports:
+      - "8000:8000"
+
+  frontend:
+    image: nginx:alpine
+    container_name: tacho_frontend
+    restart: always
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8975:80"
+    depends_on:
+      - backend
+
+volumes:
+  tacho_data:

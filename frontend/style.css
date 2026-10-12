@@ -1,0 +1,966 @@
+/* ====================================================================
+   TachoSmart - Modern Dark Digital Tachograph Design System
+   EU Regulation 561/2006
+   ==================================================================== */
+
+:root {
+    --bg-dark: #0a0d14;
+    --bg-card: rgba(17, 24, 39, 0.85);
+    --bg-card-hover: rgba(31, 41, 55, 0.95);
+    --bg-surface: #111827;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-highlight: rgba(255, 255, 255, 0.16);
+    
+    /* Text colors */
+    --text-primary: #f9fafb;
+    --text-secondary: #9ca3af;
+    --text-muted: #6b7280;
+
+    /* Tachograph Activity Colors */
+    --color-drive: #10b981;
+    --color-drive-glow: rgba(16, 185, 129, 0.35);
+    --color-drive-bg: rgba(16, 185, 129, 0.15);
+
+    --color-work: #f59e0b;
+    --color-work-glow: rgba(245, 158, 11, 0.35);
+    --color-work-bg: rgba(245, 158, 11, 0.15);
+
+    --color-poa: #3b82f6;
+    --color-poa-glow: rgba(59, 130, 246, 0.35);
+    --color-poa-bg: rgba(59, 130, 246, 0.15);
+
+    --color-rest: #8b5cf6;
+    --color-rest-glow: rgba(139, 92, 246, 0.35);
+    --color-rest-bg: rgba(139, 92, 246, 0.15);
+
+    /* Alerts */
+    --color-danger: #ef4444;
+    --color-danger-bg: rgba(239, 68, 68, 0.2);
+    --color-warning: #f59e0b;
+    --color-warning-bg: rgba(245, 158, 11, 0.2);
+
+    /* Layout */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-full: 9999px;
+    --transition-fast: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    line-height: 1.5;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image: 
+        radial-gradient(circle at 15% 10%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 85% 15%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 50% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
+}
+
+.font-mono {
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -0.02em;
+}
+
+/* ================= Top Navigation ================= */
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 28px;
+    background: rgba(11, 15, 25, 0.8);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.brand-icon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
+.brand-text h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: -0.01em;
+}
+
+.badge-eu {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+}
+
+.brand-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.header-center {
+    display: flex;
+    gap: 12px;
+}
+
+.clock-chip {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-color);
+    padding: 6px 14px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.clock-label {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.clock-time {
+    color: var(--color-drive);
+    font-weight: 700;
+}
+
+.clock-chip.local .clock-time {
+    color: #38bdf8;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* ================= Buttons ================= */
+.btn {
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all var(--transition-fast);
+}
+
+.btn-sm {
+    padding: 8px 14px;
+    font-size: 13px;
+}
+
+.btn-primary {
+    background: #2563eb;
+    color: white;
+}
+.btn-primary:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.14);
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.25);
+}
+
+/* ================= Main Content Container ================= */
+.main-content {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* ================= Alerts Strip ================= */
+.alerts-strip {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 1440px;
+    margin: 16px auto 0 auto;
+    padding: 0 24px;
+}
+
+.alert-box {
+    padding: 12px 18px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    animation: slideDown 0.3s ease;
+}
+
+.alert-danger {
+    background: var(--color-danger-bg);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+}
+
+.alert-warning {
+    background: var(--color-warning-bg);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #fde68a;
+}
+
+/* ================= Tachograph Controller Card (4 Big Buttons) ================= */
+.tacho-controller-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.controller-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.controller-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.active-activity-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.pulse-dot {
+    width: 10px;
+    height: 10px;
+    background-color: var(--color-drive);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--color-drive);
+    animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.95); opacity: 0.7; }
+    50% { transform: scale(1.3); opacity: 1; }
+    100% { transform: scale(0.95); opacity: 0.7; }
+}
+
+.tacho-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.tacho-btn {
+    border: 1px solid var(--border-color);
+    background: rgba(17, 24, 39, 0.9);
+    border-radius: var(--radius-md);
+    padding: 20px 16px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition-fast);
+}
+
+.tacho-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-highlight);
+    background: var(--bg-card-hover);
+}
+
+.tacho-btn-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    transition: all var(--transition-fast);
+}
+
+.tacho-btn-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.tacho-btn-code {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* Colors for Modes */
+.mode-drive .tacho-btn-icon {
+    background: var(--color-drive-bg);
+    color: var(--color-drive);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.mode-drive:hover {
+    box-shadow: 0 6px 20px var(--color-drive-glow);
+    border-color: var(--color-drive);
+}
+.mode-drive.active {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: var(--color-drive);
+    box-shadow: 0 0 25px var(--color-drive-glow);
+}
+.mode-drive.active .tacho-btn-icon {
+    background: var(--color-drive);
+    color: white;
+}
+
+.mode-work .tacho-btn-icon {
+    background: var(--color-work-bg);
+    color: var(--color-work);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.mode-work:hover {
+    box-shadow: 0 6px 20px var(--color-work-glow);
+    border-color: var(--color-work);
+}
+.mode-work.active {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: var(--color-work);
+    box-shadow: 0 0 25px var(--color-work-glow);
+}
+.mode-work.active .tacho-btn-icon {
+    background: var(--color-work);
+    color: white;
+}
+
+.mode-poa .tacho-btn-icon {
+    background: var(--color-poa-bg);
+    color: var(--color-poa);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+.mode-poa:hover {
+    box-shadow: 0 6px 20px var(--color-poa-glow);
+    border-color: var(--color-poa);
+}
+.mode-poa.active {
+    background: rgba(59, 130, 246, 0.12);
+    border-color: var(--color-poa);
+    box-shadow: 0 0 25px var(--color-poa-glow);
+}
+.mode-poa.active .tacho-btn-icon {
+    background: var(--color-poa);
+    color: white;
+}
+
+.mode-rest .tacho-btn-icon {
+    background: var(--color-rest-bg);
+    color: var(--color-rest);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+.mode-rest:hover {
+    box-shadow: 0 6px 20px var(--color-rest-glow);
+    border-color: var(--color-rest);
+}
+.mode-rest.active {
+    background: rgba(139, 92, 246, 0.12);
+    border-color: var(--color-rest);
+    box-shadow: 0 0 25px var(--color-rest-glow);
+}
+.mode-rest.active .tacho-btn-icon {
+    background: var(--color-rest);
+    color: white;
+}
+
+/* ================= Metrics Grid ================= */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.metric-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    transition: border-color var(--transition-fast);
+}
+
+.metric-card:hover {
+    border-color: var(--border-highlight);
+}
+
+.metric-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.metric-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.metric-limit {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+}
+
+.metric-value-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.metric-primary-val {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.metric-sub-val {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.metric-sub-val .label {
+    color: var(--text-muted);
+}
+
+.progress-track {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.4s ease;
+}
+
+.metric-card-footer {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 10px;
+}
+
+/* Accent utilities */
+.bg-drive { background-color: var(--color-drive); }
+.bg-work { background-color: var(--color-work); }
+.bg-poa { background-color: var(--color-poa); }
+.bg-rest { background-color: var(--color-rest); }
+.bg-info { background-color: #38bdf8; }
+.bg-warning { background-color: #f59e0b; }
+.bg-purple { background-color: #a855f7; }
+
+.text-success { color: var(--color-drive); }
+.text-info { color: #38bdf8; }
+.text-warning { color: #f59e0b; }
+.text-purple { color: #c084fc; }
+.text-highlight { color: #38bdf8; font-weight: 700; }
+
+/* ================= Timeline Section ================= */
+.timeline-section-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.timeline-title-group h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.timeline-legend {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.timeline-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-group {
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+}
+
+.btn-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all var(--transition-fast);
+}
+
+.btn-tab:hover {
+    color: var(--text-primary);
+}
+
+.btn-tab.active {
+    background: #2563eb;
+    color: white;
+}
+
+.btn-icon {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: var(--radius-sm);
+}
+
+/* Custom Vis-Timeline Theme Overrides */
+.vis-custom-timeline {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #0f1422;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    height: 220px;
+}
+
+.vis-timeline {
+    border: none;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.vis-time-axis .vis-text {
+    color: #94a3b8 !important;
+    font-size: 11px;
+}
+
+.vis-time-axis .vis-grid.vis-minor {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.vis-time-axis .vis-grid.vis-major {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.vis-custom-time {
+    background-color: #ef4444 !important;
+    width: 2px !important;
+}
+
+/* Timeline Activity Items Styles */
+.vis-item {
+    border-radius: 6px !important;
+    border: none !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+}
+
+.vis-item.item-drive {
+    background-color: var(--color-drive) !important;
+}
+.vis-item.item-work {
+    background-color: var(--color-work) !important;
+    color: #111827 !important;
+}
+.vis-item.item-poa {
+    background-color: var(--color-poa) !important;
+}
+.vis-item.item-rest {
+    background-color: var(--color-rest) !important;
+}
+
+/* ================= History Table Section ================= */
+.history-section-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.history-header h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.tacho-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.tacho-table th {
+    text-align: left;
+    padding: 10px 14px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tacho-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.tacho-table tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.type-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.type-pill.pill-drive { background: var(--color-drive-bg); color: var(--color-drive); }
+.type-pill.pill-work { background: var(--color-work-bg); color: var(--color-work); }
+.type-pill.pill-poa { background: var(--color-poa-bg); color: var(--color-poa); }
+.type-pill.pill-rest { background: var(--color-rest-bg); color: var(--color-rest); }
+
+/* ================= Modal ================= */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-backdrop.hidden {
+    display: none;
+}
+
+.modal-dialog {
+    background: #111827;
+    border: 1px solid var(--border-highlight);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 540px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 24px;
+    cursor: pointer;
+}
+.btn-close:hover {
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.form-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    transition: border-color var(--transition-fast);
+}
+
+.form-input:focus {
+    border-color: #3b82f6;
+}
+
+.activity-type-picker {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.activity-type-picker input[type="radio"] {
+    display: none;
+}
+
+.picker-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 2px solid transparent;
+    opacity: 0.6;
+    transition: all var(--transition-fast);
+}
+
+.activity-type-picker input[type="radio"]:checked + .picker-box {
+    opacity: 1;
+    border-color: white;
+    transform: scale(1.02);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .tacho-buttons-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .top-nav {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+    .tacho-buttons-grid {
+        grid-template-columns: 1fr;
+    }
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    .activity-type-picker {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
