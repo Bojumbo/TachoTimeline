@@ -23,8 +23,11 @@ from app.rules import calculate_tachograph_status
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("tacho")
 
-# Initialize DB tables on startup
-init_db()
+# Initialize DB tables safely on startup
+try:
+    init_db()
+except Exception as e:
+    logger.error(f"Initial DB creation warning: {e}")
 
 app = FastAPI(
     title="TachoSmart / TruckerTimeline API",

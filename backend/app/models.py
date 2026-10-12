@@ -7,16 +7,27 @@ from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tacho.db")
 
-# For SQLite, ensure directory exists and connect_args allows multi-threading
-connect_args = {}
-if DATABASE_URL.startswith("sqlite:///"):
-    connect_args = {"check_same_thread": False}
-    db_file_path = DATABASE_URL.replace("sqlite:///", "")
-    dir_name = os.path.dirname(db_file_path)
-    if dir_name:
-        os.makedirs(dir_name, exist_ok=True)
+def get_engine():
+    global DATABASE_URL
+    connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+    try:
+        if DATABASE_URL.startswith("sqlite:///"):
+            db_file_path = DATABASE_URL.replace("sqlite:///", "")
+            dir_name = os.path.dirname(db_file_path)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
+        eng = create_engine(DATABASE_URL, connect_args=connect_args)
+        # Test connection
+        with eng.connect() as conn:
+            pass
+        return eng
+    except Exception as e:
+        # Fallback to local working directory SQLite if /data is not accessible
+        fallback_url = "sqlite:///./tacho.db"
+        DATABASE_URL = fallback_url
+        return create_engine(fallback_url, connect_args={"check_same_thread": False})
 
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
+engine = get_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
