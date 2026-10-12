@@ -10,8 +10,8 @@ services:
       - JWT_SECRET=change_this_to_very_secure_secret_key_12345
     volumes:
       - tacho_data:/data
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
 
   frontend:
     image: nginx:alpine
