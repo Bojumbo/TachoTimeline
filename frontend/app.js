@@ -480,6 +480,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (res.ok) {
                 await refreshDashboard();
                 if (timeline) timeline.fit();
+            } else {
+                const errText = await res.text();
+                alert('Помилка завантаження демо: ' + errText);
             }
         } catch (err) {
             alert('Помилка завантаження демо: ' + err.message);
@@ -491,7 +494,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!confirm('Ви дійсно бажаєте очистити всі записи тахографа?')) return;
         try {
             const res = await apiFetch('/activities/clear', { method: 'POST' });
-            if (res.ok) await refreshDashboard();
+            if (res.ok) {
+                await refreshDashboard();
+            } else {
+                const errText = await res.text();
+                alert('Помилка: ' + errText);
+            }
         } catch (err) {
             alert('Помилка: ' + err.message);
         }
@@ -535,8 +543,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 closeModal();
                 await refreshDashboard();
             } else {
-                const errData = await res.json();
-                alert('Помилка: ' + (errData.detail || 'Не вдалося зберегти запис'));
+                let errDetail = await res.text();
+                try {
+                    const parsed = JSON.parse(errDetail);
+                    errDetail = parsed.detail || parsed.message || errDetail;
+                } catch(e) {}
+                alert('Помилка сервера: ' + errDetail);
             }
         } catch (err) {
             alert('Мережева помилка: ' + err.message);

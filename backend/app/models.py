@@ -7,8 +7,14 @@ from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tacho.db")
 
-# For SQLite, ensure connect_args allows multi-threading
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+# For SQLite, ensure directory exists and connect_args allows multi-threading
+connect_args = {}
+if DATABASE_URL.startswith("sqlite:///"):
+    connect_args = {"check_same_thread": False}
+    db_file_path = DATABASE_URL.replace("sqlite:///", "")
+    dir_name = os.path.dirname(db_file_path)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
 
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

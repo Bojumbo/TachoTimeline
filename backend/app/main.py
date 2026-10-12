@@ -1,10 +1,12 @@
 import os
+import logging
+import traceback
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
-from fastapi import FastAPI, Depends, HTTPException, status, Query
+from fastapi import FastAPI, Depends, HTTPException, status, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
@@ -17,6 +19,9 @@ from app.auth import (
     verify_password, get_password_hash, create_access_token
 )
 from app.rules import calculate_tachograph_status
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("tacho")
 
 # Initialize DB tables on startup
 init_db()
@@ -37,6 +42,26 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Global exception on {request.method} {request.url}: {exc}")
+    logger.error(traceback.format_exc())
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Помилка сервера: {str(exc)}"}
+    )
+
+
+# ================= Helper to normalize datetimes for SQLite =================
+
+def to_naive_utc(dt: Optional[datetime]) -> Optional[datetime]:
+    if dt is None:
+        return None
+    if dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
+
+
 # ================= Auth Endpoints =================
 
 @app.post("/api/auth/register", response_model=UserOut)
@@ -49,7 +74,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         username=user_in.username,
         email=user_in.email,
         hashed_password=get_password_hash(user_in.password),
-        created_at=datetime.now(timezone.utc)
+        created_at=to_naive_utc(datetime.now(timezone.utc))
     )
     db.add(user)
     db.commit()
@@ -83,7 +108,7 @@ def guest_login(db: Session = Depends(get_db)):
             username="driver_guest",
             email="driver@tachotimeline.eu",
             hashed_password=get_password_hash("tachoguest123"),
-            created_at=datetime.now(timezone.utc)
+            created_at=to_naive_utc(datetime.now(timezone.utc))
         )
         db.add(user)
         db.commit()
@@ -113,9 +138,9 @@ def list_activities(
 ):
     query = db.query(Activity).filter(Activity.user_id == current_user.id)
     if start_date:
-        query = query.filter((Activity.end_time >= start_date) | (Activity.end_time.is_(None)))
+        query = query.filter((Activity.end_time >= to_naive_utc(start_date)) | (Activity.end_time.is_(None)))
     if end_date:
-        query = query.filter(Activity.start_time <= end_date)
+        query = query.filter(Activity.start_time <= to_naive_utc(end_date))
     return query.order_by(Activity.start_time.asc()).all()
 
 
@@ -128,10 +153,10 @@ def create_activity(
     activity = Activity(
         user_id=current_user.id,
         type=activity_in.type.upper(),
-        start_time=activity_in.start_time,
-        end_time=activity_in.end_time,
+        start_time=to_naive_utc(activity_in.start_time),
+        end_time=to_naive_utc(activity_in.end_time),
         note=activity_in.note,
-        created_at=datetime.now(timezone.utc)
+        created_at=to_naive_utc(datetime.now(timezone.utc))
     )
     db.add(activity)
     db.commit()
@@ -153,9 +178,9 @@ def update_activity(
     if activity_in.type is not None:
         act.type = activity_in.type.upper()
     if activity_in.start_time is not None:
-        act.start_time = activity_in.start_time
+        act.start_time = to_naive_utc(activity_in.start_time)
     if activity_in.end_time is not None:
-        act.end_time = activity_in.end_time
+        act.end_time = to_naive_utc(activity_in.end_time)
     if activity_in.note is not None:
         act.note = activity_in.note
         
@@ -184,13 +209,7 @@ def switch_activity(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_or_guest)
 ):
-    """
-    Simulates real-world tachograph mode switch (e.g. driver pressed 'DRIVE' or 'REST'):
-    Closes any currently ongoing activity, and starts a new activity of the requested type.
-    """
-    ts = req.timestamp or datetime.now(timezone.utc)
-    if ts.tzinfo is None:
-        ts = ts.replace(tzinfo=timezone.utc)
+    ts = to_naive_utc(req.timestamp or datetime.now(timezone.utc))
 
     # Find open activity
     ongoing = db.query(Activity).filter(
@@ -199,7 +218,6 @@ def switch_activity(
     ).first()
 
     if ongoing:
-        # If switching to the same activity type, just keep it running
         if ongoing.type == req.type.upper():
             return {"status": "unchanged", "activity_id": ongoing.id}
         ongoing.end_time = ts
@@ -212,7 +230,7 @@ def switch_activity(
         start_time=ts,
         end_time=None,
         note=req.note,
-        created_at=datetime.now(timezone.utc)
+        created_at=to_naive_utc(datetime.now(timezone.utc))
     )
     db.add(new_act)
     db.commit()
@@ -236,24 +254,12 @@ def seed_demo_data(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_or_guest)
 ):
-    """
-    Populates realistic trucker shift for today:
-    - 06:00 - 06:30: WORK (Pre-trip inspection / Daily check)
-    - 06:30 - 10:45: DRIVE (4h 15m driving)
-    - 10:45 - 11:30: REST (45m mandatory break)
-    - 11:30 - 14:00: DRIVE (2h 30m driving)
-    - 14:00 - 14:45: WORK (Unloading cargo)
-    - 14:45 - 16:30: DRIVE (1h 45m driving -> total daily drive ~8h 30m)
-    - 16:30 - now: REST / Ongoing
-    """
     # Delete existing activities for this user
     db.query(Activity).filter(Activity.user_id == current_user.id).delete()
 
     now = datetime.now(timezone.utc)
-    # Align to today at 06:00
     today_6am = now.replace(hour=6, minute=0, second=0, microsecond=0)
     if now < today_6am + timedelta(hours=8):
-        # If current time is early morning, shift base backwards by 12 hours so demo fits nicely
         base_time = now - timedelta(hours=8)
     else:
         base_time = today_6am
@@ -272,10 +278,10 @@ def seed_demo_data(
         act = Activity(
             user_id=current_user.id,
             type=item["type"],
-            start_time=item["start"],
-            end_time=item["end"],
+            start_time=to_naive_utc(item["start"]),
+            end_time=to_naive_utc(item["end"]) if item["end"] else None,
             note=item["note"],
-            created_at=datetime.now(timezone.utc)
+            created_at=to_naive_utc(datetime.now(timezone.utc))
         )
         db.add(act)
 

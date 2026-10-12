@@ -1,10 +1,12 @@
 import os
+import hashlib
+import hmac
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from app.models import SessionLocal, User
 
@@ -12,7 +14,6 @@ SECRET_KEY = os.getenv("JWT_SECRET", "change_this_to_very_secure_secret_key_1234
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 
@@ -24,12 +25,24 @@ def get_db():
         db.close()
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
-
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    """Standard secure PBKDF2-HMAC-SHA256 password hashing (zero fragile C-dependencies)."""
+    salt = secrets.token_hex(16)
+    key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100000)
+    return f"pbkdf2:sha256:100000${salt}${key.hex()}"
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        if hashed_password.startswith("pbkdf2:"):
+            parts = hashed_password.split("$")
+            salt = parts[1]
+            key_hex = parts[2]
+            computed = hashlib.pbkdf2_hmac("sha256", plain_password.encode("utf-8"), salt.encode("utf-8"), 100000)
+            return hmac.compare_digest(key_hex, computed.hex())
+        return False
+    except Exception:
+        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
