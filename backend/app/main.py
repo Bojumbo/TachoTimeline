@@ -45,6 +45,12 @@ app.add_middleware(
 )
 
 
+@app.get("/health")
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok", "app": "TachoSmart", "time": datetime.now(timezone.utc).isoformat()}
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Global exception on {request.method} {request.url}: {exc}")
