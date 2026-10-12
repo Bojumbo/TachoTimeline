@@ -59,6 +59,14 @@ class ActivityBase(BaseModel):
     end_time: Optional[datetime] = None
     note: Optional[str] = None
 
+    @field_serializer("start_time", "end_time")
+    def serialize_datetime(self, dt: Optional[datetime]) -> Optional[str]:
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
+
 
 class ActivityCreate(ActivityBase):
     pass
@@ -77,6 +85,12 @@ class ActivityOut(ActivityBase):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("created_at")
+    def serialize_created_at(self, dt: datetime) -> str:
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
 
 
 class SwitchActivityRequest(BaseModel):

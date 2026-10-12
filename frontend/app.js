@@ -44,6 +44,17 @@ function formatDateTimeInput(date) {
     return local.toISOString().slice(0, 16);
 }
 
+function parseApiDate(dateStr) {
+    if (!dateStr) return null;
+    if (dateStr instanceof Date) return dateStr;
+    let s = String(dateStr);
+    // If string has no timezone indicator, treat as UTC
+    if (!s.endsWith('Z') && !s.includes('+') && !/T\d{2}:\d{2}:\d{2}-/.test(s)) {
+        s = s + 'Z';
+    }
+    return new Date(s);
+}
+
 // ================= Authentication =================
 async function getAuthToken() {
     let token = localStorage.getItem('tacho_token');
@@ -255,7 +266,7 @@ function updateActiveController(currAct) {
 
     if (currAct && currAct.is_ongoing) {
         badgeText.innerText = currAct.type;
-        activeActivityStartTime = new Date(currAct.start);
+        activeActivityStartTime = parseApiDate(currAct.start);
 
         const btnMap = {
             'DRIVE': 'btnModeDrive',
@@ -300,9 +311,9 @@ function renderTimelineData(activities) {
     if (!timeline || !timelineItems) return;
 
     const items = activities.map(act => {
-        const start = new Date(act.start_time);
-        const end = act.end_time ? new Date(act.end_time) : new Date();
-        const durationMin = Math.round((end - start) / 60000);
+        const start = parseApiDate(act.start_time);
+        const end = act.end_time ? parseApiDate(act.end_time) : new Date();
+        const durationMin = Math.max(0, Math.round((end - start) / 60000));
         const actType = act.type.toUpperCase();
 
         const labels = {
@@ -351,9 +362,9 @@ function renderActivityTable(activities) {
     const sorted = [...activities].reverse();
 
     tbody.innerHTML = sorted.map(act => {
-        const start = new Date(act.start_time);
-        const end = act.end_time ? new Date(act.end_time) : null;
-        const durationMin = end ? Math.round((end - start) / 60000) : Math.round((new Date() - start) / 60000);
+        const start = parseApiDate(act.start_time);
+        const end = act.end_time ? parseApiDate(act.end_time) : null;
+        const durationMin = end ? Math.max(0, Math.round((end - start) / 60000)) : Math.max(0, Math.round((new Date() - start) / 60000));
         const isOngoing = !act.end_time;
 
         return `
@@ -381,7 +392,10 @@ async function switchActivityMode(type) {
     try {
         const res = await apiFetch('/activities/switch', {
             method: 'POST',
-            body: JSON.stringify({ type: type })
+            body: JSON.stringify({ 
+                type: type,
+                timestamp: new Date().toISOString()
+            })
         });
         if (res.ok) {
             await refreshDashboard();
@@ -413,8 +427,8 @@ function openEditModal(act) {
         r.checked = (r.value === act.type);
     });
 
-    document.getElementById('modalStartTime').value = formatDateTimeInput(act.start_time);
-    document.getElementById('modalEndTime').value = act.end_time ? formatDateTimeInput(act.end_time) : '';
+    document.getElementById('modalStartTime').value = formatDateTimeInput(parseApiDate(act.start_time));
+    document.getElementById('modalEndTime').value = act.end_time ? formatDateTimeInput(parseApiDate(act.end_time)) : '';
     document.getElementById('modalNote').value = act.note || '';
     modal.classList.remove('hidden');
 }
