@@ -14,12 +14,9 @@ services:
       - "8000"
 
   frontend:
-    image: nginx:alpine
+    build: ./frontend
     container_name: tacho_frontend
     restart: always
-    volumes:
-      - ./frontend:/usr/share/nginx/html:ro
-      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "8975:80"
     depends_on:
